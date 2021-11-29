@@ -1,8 +1,11 @@
 /*
 Types of cells:
--1 : empty cell
-0-5: Actual resource -- [B]ranch [F]ruit [L]eaf [R]ock [S]hell [T]hread
-6-11: Tentative resource
+-1 : Empty cell
+0-5: Resource -- [B]ranch [F]ruit [L]eaf [R]ock [S]hell [T]hread
+
+Cards:
+Each Card has an ID. ID of the card is n (0...5) + 6*type
+E.g... the Leaf cards (type value 2) are IDs 12, 13, 14, 15, 16, 17
 
 Coin States:
 
@@ -32,11 +35,11 @@ function validateState() {
 
     for (let x = 0; x < 7; x++) {
         for (let y = 0; y < 7; y++) {
-            if (board[x][y].type >= 0 && board[x][y].type <= 5) {
+            if (board[x][y].id != -1 && !board[x][y].tentative) {
                 numReals++;
             }
 
-            if (board[x][y].type > 5) {
+            if (board[x][y].tentative) {
 
                 // Keep track of the first two tentative cells we find, so we can refer to them later.
                 if (numTentatives == 0) {
@@ -67,10 +70,10 @@ function validateState() {
 
 
     if (numTentatives == 2) {
-        // We have the right number of tentative cells. Make sure those are valid.
-        // First lets make sure they're both the same type.
-        if (board[tentativeCell1X][tentativeCell1Y] != board[tentativeCell2X][tentativeCell2Y]) {
-            return {status: "ERROR", message: "Tentative cells are of different types"}
+        // We have a single tentative card. Make sure those are valid.
+        // First lets make sure they're both of the same card.
+        if (board[tentativeCell1X][tentativeCell1Y].id != board[tentativeCell2X][tentativeCell2Y].id) {
+            return {status: "ERROR", message: "Tentative cells are different cards"}
         }
 
         // Next lets make sure they're next to each other.
@@ -85,7 +88,7 @@ function validateState() {
         // Now lets make sure they're not next to any other cells that are of the same (nontentative) type, but are
         // next to at least 1 existing card (unless its the first placement).
 
-        realType = board[tentativeCell1X][tentativeCell1Y] - 6;
+        realType = cardType(board[tentativeCell1X][tentativeCell1Y].id);
         nextToCard = false;
         for (let x = tentativeCell1X - 1; x < tentativeCell1X + 2; x++) {
             for (let y = tentativeCell1Y - 1; y < tentativeCell1Y + 2; y++) {
@@ -94,10 +97,10 @@ function validateState() {
                 if (x > 6) continue;
                 if (y > 6) continue;
                 if (x == y) continue;
-                if (board[x][y].type == realType) {
+                if (cardType(board[x][y].id) == realType) {
                     return {status: "INVALID", message: "Card placed next to same type."}
                 }
-                if (board[x][y].type >= 0 && board[x][y].type <= 5) {
+                if (cardType(board[x][y].id) >= 0 && cardType(board[x][y].id) <= 5) {
                     nextToCard = true;
                 }
             }
@@ -110,10 +113,10 @@ function validateState() {
                 if (x > 6) continue;
                 if (y > 6) continue;
                 if (x == y) continue;
-                if (board[x][y].type == realType) {
+                if (cardType(board[x][y].id) == realType) {
                     return {status: "INVALID", message: "Card placed next to same type."}
                 }
-                if (board[x][y].type >= 0 && board[x][y].type <= 5) {
+                if (cardType(board[x][y].id) >= 0 && cardType(board[x][y].id) <= 5) {
                     nextToCard = true;
                 }
             }
@@ -134,14 +137,14 @@ function validateState() {
     for (let x = 0; x < 7; x++) {
         for (let y = 0; y < 7; y++) {
             if (board[x][y].coinstate == 1) {
-                if (board[x][y].type < 0 || board[x][y].type > 5) {
+                if (board[x][y].id == -1 || board[x][y].tentative) {
                     return {status: "ERROR", message: "Found a placed coin not on a card."}
                 }
                 numReals++;
             }
 
             if (board[x][y].coinstate == 0) {
-                if (board[x][y].type < 0 || board[x][y].type > 5) {
+                if (board[x][y].id == -1 || board[x][y].tentative) {
                     return {status: "INVALID", message: "Found a tentative coin not on a card."}
                 }
                 numTentatives++;
@@ -172,7 +175,17 @@ function getGameStateAscii() {
 
     for (let x = 0; x < 7; x++) {
         for (let y = 0; y < 7; y++) {
-            boardAscii += ".BFLRSTbflrst".charAt(board[x][y].type+1)
+            if (board[x][y].id == -1) {
+                boardAscii += ".";
+            } else {
+                type = cardType(board[x][y].id)
+
+                if (board[x][y].tentative) {
+                    boardAscii += "bflrst".charAt(type)
+                } else {
+                    boardAscii += "BFLRST".charAt(type)
+                }
+            }
         }
         boardAscii += "<br>";
     }
@@ -216,12 +229,16 @@ function drawCard() {
     hand.push(deck.shift());
 }
 
+function cardType(cardId) {
+    return cardId / 6;
+}
+
 function createEmptyBoard() {
     board = [];
     for (let x = 0; x < 7; x++) {
         board[x] = [];
         for (let y = 0; y < 7; y++) {
-            board[x][y] = {type: -1, coinstate: -1};
+            board[x][y] = {id: -1, tentative: false, coinstate: -1};
         }
     }
     return board;
@@ -231,7 +248,7 @@ function createShuffledDeck() {
     deck = [];
     for (let m = 0; m < 6; m++) {
         for (let n = 0; n < 6; n++) {
-            deck.push(m);
+            deck.push({id: m*6 + n, type: m});
         }
     }
     shuffleArray(deck);
