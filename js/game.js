@@ -37,8 +37,8 @@ function inputCommandClick() {
 
     if (args[0] == 'c') {
         let handIndex = args[1]
-        let y = parseInt(args[2])
-        let x = parseInt(args[3])
+        let x = parseInt(args[2])
+        let y = parseInt(args[3])
         let horizontal = args[4].toLowerCase() == "h";
 
         let cardId = hand[handIndex]
@@ -128,8 +128,8 @@ function placeCard(cardId, x, y, horizontal) {
     let state = getState();
     let board = state.board;
 
-    let xdiff = horizontal ? 0 : 1;
-    let ydiff = horizontal ? 1 : 0;
+    let xdiff = horizontal ? 1 : 0;
+    let ydiff = horizontal ? 0 : 1;
 
     // First make sure its being placed fully on the board.
     if (x < 0 || x >= BOARD_W || y < 0 || y >= BOARD_H || (x+xdiff) >= BOARD_W || (y+ydiff >= BOARD_H)) {
@@ -438,8 +438,8 @@ function getGameStateAscii() {
     let boardAscii = ""
     let board = state.board;
 
-    for (let x = 0; x < BOARD_W; x++) {
-        for (let y = 0; y < BOARD_H; y++) {
+    for (let y = 0; y < BOARD_H; y++) {
+        for (let x = 0; x < BOARD_W; x++) {
             if (board[x][y].id == -1) {
                 boardAscii += ".";
             } else {
