@@ -72,10 +72,10 @@ function checkEndOfGame() {
     let hand = state.hand;
     let deck = state.deck;
 
-    if (deck.length > 0 || hand.length > 0) {
-        return -1;
-    }
+    return (deck.length == 0 && hand.length == 0);
+}
 
+function getScore() {
     let coinsPlaced = 0;
 
     for (let x = 0; x < BOARD_W; x++) {
