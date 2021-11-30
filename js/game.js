@@ -14,6 +14,9 @@ Coin States:
 1: actual coin
 */
 
+const BOARD_W = 8;
+const BOARD_H = 8;
+
 function newGameClick() {
     newGame();
     reload();
@@ -72,8 +75,8 @@ function checkEndOfGame() {
 
     let coinsPlaced = 0;
 
-    for (let x = 0; x < 6; x++) {
-        for (let y = 0; y < 6; y++) {
+    for (let x = 0; x < BOARD_W; x++) {
+        for (let y = 0; y < BOARD_H; y++) {
             if (board[x][y].coinstate == 1) {
                 coinsPlaced++;
             }
@@ -102,8 +105,8 @@ function submitTentativeCoins() {
 
     if (validationResult.status == "VALID") {
         // Find all 6 tentative coins and make them permanent.
-        for (let x = 0; x < 6; x++) {
-            for (let y = 0; y < 6; y++) {
+        for (let x = 0; x < BOARD_W; x++) {
+            for (let y = 0; y < BOARD_H; y++) {
                 if (board[x][y].coinstate == 0) {
                     board[x][y].coinstate = 1;
                 }
@@ -123,7 +126,7 @@ function placeCard(cardId, x, y, horizontal) {
     let ydiff = horizontal ? 1 : 0;
 
     // First make sure its being placed fully on the board.
-    if (x < 0 || x > 6 || y < 0 || y > 6 || (x+xdiff) > 6 || (y+ydiff > 6)) {
+    if (x < 0 || x >= BOARD_W || y < 0 || y >= BOARD_H || (x+xdiff) >= BOARD_W || (y+ydiff >= BOARD_H)) {
         return {status: "INVALID", message: "Trying to place a card off the board."}
     }
 
@@ -153,7 +156,7 @@ function placeCard(cardId, x, y, horizontal) {
         board[x][y].tentative = false;
         board[x+xdiff][y+ydiff].tentative = false;
 
-        let confirmedstate = {board: board, deck: state.deck, goals: state.goals, hand: state.hand};
+        let confirmedstate = {board: board, deck: state.deck, goals: state.goals, hand: hand};
         saveState(confirmedstate);
 
         drawCard();
@@ -189,8 +192,8 @@ function validateState() {
     let tentativeCell2X = 0;
     let tentativeCell2Y = 0;
 
-    for (let x = 0; x < 7; x++) {
-        for (let y = 0; y < 7; y++) {
+    for (let x = 0; x < BOARD_W; x++) {
+        for (let y = 0; y < BOARD_H; y++) {
             if (board[x][y].id != -1 && !board[x][y].tentative) {
                 numReals++;
             }
@@ -283,8 +286,8 @@ function validateState() {
             return {status: "INVALID", message: "Card must be placed next to an existing card."}
         }
         if (!nextToCardOfSameType) {
-            for (let centerX = 0; centerX < 7; centerX++) {
-                for (let centerY = 0; centerY < 7; centerY++) {
+            for (let centerX = 0; centerX < BOARD_W; centerX++) {
+                for (let centerY = 0; centerY < BOARD_H; centerY++) {
                     let centerType = cardType(board[centerX][centerY].id)
                     let isTentativeCell = board[centerX][centerY].tentative
                     if (centerType == placedType && !isTentativeCell) {
@@ -322,8 +325,8 @@ function validateState() {
     let tentativeCells = []; //keys: 'x', 'y'
 
     // Getting counts of all coins and tentative coins. Also verifying all coins are on actual cards.
-    for (let x = 0; x < 7; x++) {
-        for (let y = 0; y < 7; y++) {
+    for (let x = 0; x < BOARD_W; x++) {
+        for (let y = 0; y < BOARD_H; y++) {
             if (board[x][y].coinstate == 1) {
                 if (board[x][y].id == -1 || board[x][y].tentative) {
                     return {status: "ERROR", message: "Found a placed coin not on a card."}
@@ -341,14 +344,19 @@ function validateState() {
         }
     }
 
-    // Each time a goal is satisfied, we get 6 coins. Make sure tentative coins are either 0 or 6, and real
-    // coins are divisible by 6.
-    if (!(numTentativeCoins == 0 || numTentativeCoins == 6)) {
-        return {status: "INVALID", message: "Placed the wrong number of coins."}
+    // Every time we place coins, we place 6 at a time (covering 3 cards).
+    if (numRealCoins % 6 != 0) {
+        return {status: "ERROR", message: "Wrong number of real coins placed."}
     }
 
-    if (numRealCoins % 6 != 0) {
-        return {status: "ERROR", message: "Wrong number of coins placed."}
+    // If there's no tentative coins, then we can return now, as card placement and real coin placement is already verified.
+    if (numTentativeCoins == 0) {
+        return {status: "VALID", message: "valid"}
+    }
+
+    // Make sure there are exactly 6 tentative coins placed.
+    if (numTentativeCoins != 6) {
+        return {status: "INVALID", message: "Placed the wrong number of coins."}
     }
 
     // Need to check if all tentative coins are adjacent.
@@ -409,7 +417,7 @@ function validateState() {
 }
 
 function isValidCell(x, y) {
-    return x >= 0 && x <= 6 && y >= 0 && y <= 6;
+    return x >= 0 && x < BOARD_W && y >= 0 && y < BOARD_H;
 }
 
 function eqSet(as, bs) {
@@ -424,8 +432,8 @@ function getGameStateAscii() {
     let boardAscii = ""
     let board = state.board;
 
-    for (let x = 0; x < 7; x++) {
-        for (let y = 0; y < 7; y++) {
+    for (let x = 0; x < BOARD_W; x++) {
+        for (let y = 0; y < BOARD_H; y++) {
             if (board[x][y].id == -1) {
                 boardAscii += ".";
             } else {
@@ -512,9 +520,9 @@ function cardType(cardId) {
 
 function createEmptyBoard() {
     let board = [];
-    for (let x = 0; x < 7; x++) {
+    for (let x = 0; x < BOARD_W; x++) {
         board[x] = [];
-        for (let y = 0; y < 7; y++) {
+        for (let y = 0; y < BOARD_H; y++) {
             board[x][y] = {id: -1, tentative: false, coinstate: -1};
         }
     }
