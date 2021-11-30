@@ -26,21 +26,21 @@ Commands:
 
 */
 function inputCommandClick() {
-    state = getState();
-    hand = state.hand;
+    let state = getState();
+    let hand = state.hand;
 
-    command = document.getElementById('command').value
-    args = command.split(' ')
+    let command = document.getElementById('command').value
+    let args = command.split(' ')
 
     if (args[0] == 'c') {
-        handIndex = args[1]
-        y = parseInt(args[2])
-        x = parseInt(args[3])
-        horizontal = args[4].toLowerCase() == "h";
+        let handIndex = args[1]
+        let y = parseInt(args[2])
+        let x = parseInt(args[3])
+        let horizontal = args[4].toLowerCase() == "h";
 
-        cardId = hand[handIndex]
+        let cardId = hand[handIndex]
 
-        result = placeCard(cardId, x, y, horizontal)
+        let result = placeCard(cardId, x, y, horizontal)
         console.log(result.status)
         console.log(result.message)
     }
@@ -51,19 +51,76 @@ function inputCommandClick() {
 function reload() {
     gameState = getGameStateAscii();
 
-    var container = document.getElementById("board");
-    container.innerHTML = gameState.board;
+    let boardContainer = document.getElementById("board");
+    boardContainer.innerHTML = gameState.board;
 
-    var container = document.getElementById("hand");
-    container.innerHTML = gameState.hand;
+    let handContainer = document.getElementById("hand");
+    handContainer.innerHTML = gameState.hand;
+
+    let goalsContainer = document.getElementById("goals");
+    goalsContainer.innerHTML = gameState.goals;
+}
+
+function checkEndOfGame() {
+    let state = getState();
+    let hand = state.hand;
+    let deck = state.deck;
+
+    if (deck.length > 0 || hand.length > 0) {
+        return -1;
+    }
+
+    let coinsPlaced = 0;
+
+    for (let x = 0; x < 6; x++) {
+        for (let y = 0; y < 6; y++) {
+            if (board[x][y].coinstate == 1) {
+                coinsPlaced++;
+            }
+        }
+    }
+    score = coinsPlaced / 6;
+    return score;
+}
+
+function placeTentativeCoin(x, y) {
+    let state = getState();
+    let board = state.board;
+    if (board[x][y].coinstate != -1) {
+        return {status: "INVALID", message: "There's already a coin there."};
+    }
+    board[x][y].coinstate = 0;
+
+    let newstate = {board: board, deck: state.deck, goals: state.goals, hand: state.hand}
+    saveState(newstate);
+}
+
+function submitTentativeCoins() {
+    let result = validateState();
+    let state = getState();
+    let board = state.board;
+
+    if (validationResult.status == "VALID") {
+        // Find all 6 tentative coins and make them permanent.
+        for (let x = 0; x < 6; x++) {
+            for (let y = 0; y < 6; y++) {
+                if (board[x][y].coinstate == 0) {
+                    board[x][y].coinstate = 1;
+                }
+            }
+        }
+    }
+
+    let newstate = {board: board, deck: state.deck, goals: state.goals, hand: state.hand}
+    saveState(newstate);
 }
 
 function placeCard(cardId, x, y, horizontal) {
-    state = getState();
-    board = state.board;
+    let state = getState();
+    let board = state.board;
 
-    xdiff = horizontal ? 0 : 1;
-    ydiff = horizontal ? 1 : 0;
+    let xdiff = horizontal ? 0 : 1;
+    let ydiff = horizontal ? 1 : 0;
 
     // First make sure its being placed fully on the board.
     if (x < 0 || x > 6 || y < 0 || y > 6 || (x+xdiff) > 6 || (y+ydiff > 6)) {
@@ -84,22 +141,22 @@ function placeCard(cardId, x, y, horizontal) {
     board[x+xdiff][y+ydiff].coinstate = -1;
 
     // Also need to remove the card from hand!
-    hand = state.hand;
+    let hand = state.hand;
     hand = hand.filter(c => c !== cardId); //removes card from hand matching cardId
 
-    newstate = {board: board, deck: state.deck, goals: state.goals, hand: hand}
-    saveState(newstate)
+    let newstate = {board: board, deck: state.deck, goals: state.goals, hand: hand}
+    saveState(newstate);
 
-    validationResult = validateState()
+    let validationResult = validateState()
 
     if (validationResult.status == "VALID") {
         board[x][y].tentative = false;
         board[x+xdiff][y+ydiff].tentative = false;
 
-        confirmedstate = {board: board, deck: state.deck, goals: state.goals, hand: state.hand}
-        saveState(confirmedstate)
+        let confirmedstate = {board: board, deck: state.deck, goals: state.goals, hand: state.hand};
+        saveState(confirmedstate);
 
-        drawCard()
+        drawCard();
         return validationResult;
     }
 
@@ -112,24 +169,25 @@ function placeCard(cardId, x, y, horizontal) {
     board[x][y].coinstate = -1;
     board[x+xdiff][y+ydiff].coinstate = -1;
 
-    revertedstate = {board: board, deck: state.deck, goals: state.goals, hand: hand}
-    saveState(revertedstate)
+    let revertedstate = {board: board, deck: state.deck, goals: state.goals, hand: hand};
+    saveState(revertedstate);
     return validationResult;
 }
 
 function validateState() {
-    state = getState();
-    board = state.board;
-    deck = state.deck;
-    hand = state.hand;
+    let state = getState();
+    let board = state.board;
+    let deck = state.deck;
+    let hand = state.hand;
+    let goals = state.goals;
 
     //First checking cards on board. Counting tentative cells and real cells.
-    numTentatives = 0;
-    numReals = 0;
-    tentativeCell1X = 0;
-    tentativeCell1Y = 0;
-    tentativeCell2X = 0;
-    tentativeCell2Y = 0;
+    let numTentatives = 0;
+    let numReals = 0;
+    let tentativeCell1X = 0;
+    let tentativeCell1Y = 0;
+    let tentativeCell2X = 0;
+    let tentativeCell2Y = 0;
 
     for (let x = 0; x < 7; x++) {
         for (let y = 0; y < 7; y++) {
@@ -176,8 +234,8 @@ function validateState() {
 
         // Next lets make sure they're next to each other.
 
-        diffX = tentativeCell1X - tentativeCell2X;
-        diffY = tentativeCell1Y - tentativeCell2Y;
+        let diffX = tentativeCell1X - tentativeCell2X;
+        let diffY = tentativeCell1Y - tentativeCell2Y;
 
         if (diffX * diffY != 0 || Math.abs(diffX + diffY) != 1) {
             return {status: "ERROR", message: "Tentative cells arent adjacent"}
@@ -186,36 +244,36 @@ function validateState() {
         // Verify that the card is next to another card (or is the first card placed), and is next to another card
         // of its type.
 
-        placedType = cardType(board[tentativeCell1X][tentativeCell1Y].id);
-        nextToCard = false;
-        nextToCardOfSameType = false;
-        for (let x = tentativeCell1X - 1; x < tentativeCell1X + 2; x++) {
-            for (let y = tentativeCell1Y - 1; y < tentativeCell1Y + 2; y++) {
-                if (x < 0) continue;
-                if (y < 0) continue;
-                if (x > 6) continue;
-                if (y > 6) continue;
-                if (x == y) continue;
-                if (cardType(board[x][y].id) == placedType) {
+        let placedType = cardType(board[tentativeCell1X][tentativeCell1Y].id);
+        let nextToCard = false;
+        let nextToCardOfSameType = false;
+        for (let checkDirectionX = -1; checkDirectionX < 2; checkDirectionX++) {
+            for (let checkDirectionY = -1; checkDirectionY < 2; checkDirectionY++) {
+                let checkX = tentativeCell1X + checkDirectionX;
+                let checkY = tentativeCell1Y + checkDirectionY;
+                if (!isValidCell(checkX, checkY)) continue;
+                if (checkX == tentativeCell2X && checkY == tentativeCell2Y) continue; //Dont check the other cell of the same card.
+                if (Math.abs(checkDirectionX) == Math.abs(checkDirectionY)) continue; //Only allows orthagonal adjacency.
+                if (cardType(board[checkX][checkY].id) == placedType) {
                     nextToCardOfSameType = true;
                 }
-                if (board[x][y].id >= 0) {
+                if (board[checkX][checkY].id >= 0) {
                     nextToCard = true;
                 }
             }
         }
 
-        for (let x = tentativeCell2X - 1; x < tentativeCell2X + 2; x++) {
-            for (let y = tentativeCell2Y - 1; y < tentativeCell2Y + 2; y++) {
-                if (x < 0) continue;
-                if (y < 0) continue;
-                if (x > 6) continue;
-                if (y > 6) continue;
-                if (x == y) continue;
-                if (cardType(board[x][y].id) == placedType) {
+        for (let checkDirectionX = -1; checkDirectionX < 2; checkDirectionX++) {
+            for (let checkDirectionY = -1; checkDirectionY < 2; checkDirectionY++) {
+                let checkX = tentativeCell2X + checkDirectionX;
+                let checkY = tentativeCell2Y + checkDirectionY;
+                if (!isValidCell(checkX, checkY)) continue;
+                if (checkX == tentativeCell1X && checkY == tentativeCell1Y) continue; //Dont check the other cell of the same card.
+                if (Math.abs(checkDirectionX) == Math.abs(checkDirectionY)) continue; //Only allows orthagonal adjacency.
+                if (cardType(board[checkX][checkY].id) == placedType) {
                     nextToCardOfSameType = true;
                 }
-                if (board[x][y].id >= 0) {
+                if (board[checkX][checkY].id >= 0) {
                     nextToCard = true;
                 }
             }
@@ -224,16 +282,44 @@ function validateState() {
         if (numReals > 0 && !nextToCard) {
             return {status: "INVALID", message: "Card must be placed next to an existing card."}
         }
+        if (!nextToCardOfSameType) {
+            for (let centerX = 0; centerX < 7; centerX++) {
+                for (let centerY = 0; centerY < 7; centerY++) {
+                    let centerType = cardType(board[centerX][centerY].id)
+                    let isTentativeCell = board[centerX][centerY].tentative
+                    if (centerType == placedType && !isTentativeCell) {
+                        // If the checked cell is an existing cell of the same type, see if we could place next to it.
+                        for (let checkDirectionX = -1; checkDirectionX < 2; checkDirectionX++) {
+                            for (let checkDirectionY = -1; checkDirectionY < 2; checkDirectionY++) {
+                                let checkX = centerX + checkDirectionX;
+                                let checkY = centerY + checkDirectionY;
 
-        // TODO: If its NOT next to a card of the same time, make sure that there's no valid placement where we COULD
-        // have done that.
+                                if (!isValidCell(checkX, checkY)) continue;
+                                if (Math.abs(checkDirectionX) == Math.abs(checkDirectionY)) continue; //Only allows orthagonal adjacency.
+                                
+                                // Now, check both the orthagonally adjacent cell, and the cell one further.
+                                // Both must be valid locations and empty for it to be a valid placement.
+                                if (board[checkX][checkY].id != -1) continue;
+                                let furtherCellX = checkX + checkDirectionX;
+                                let furtherCellY = checkY + checkDirectionY;
+                                if (!isValidCell(furtherCellX, furtherCellY)) continue;
+                                if (board[furtherCellX][furtherCellY].id != -1) continue;
+
+                                // At this point... we found at least one possible placement next to a same type cell.
+                                return {status: "INVALID", message: "Need to place next to a cell of the same type."};
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // Card placement looks good.
     // Next lets verify coin placement, similar logic.
-    numTentatives = 0;
-    numReals = 0;
-    tentativeCells = []; //keys: 'x', 'y'
+    let numTentativeCoins = 0;
+    let numRealCoins = 0;
+    let tentativeCells = []; //keys: 'x', 'y'
 
     // Getting counts of all coins and tentative coins. Also verifying all coins are on actual cards.
     for (let x = 0; x < 7; x++) {
@@ -242,14 +328,14 @@ function validateState() {
                 if (board[x][y].id == -1 || board[x][y].tentative) {
                     return {status: "ERROR", message: "Found a placed coin not on a card."}
                 }
-                numReals++;
+                numRealCoins++;
             }
 
             if (board[x][y].coinstate == 0) {
                 if (board[x][y].id == -1 || board[x][y].tentative) {
                     return {status: "INVALID", message: "Found a tentative coin not on a card."}
                 }
-                numTentatives++;
+                numTentativeCoins++;
                 tentativeCells.push({x: x, y: y});
             }
         }
@@ -257,61 +343,131 @@ function validateState() {
 
     // Each time a goal is satisfied, we get 6 coins. Make sure tentative coins are either 0 or 6, and real
     // coins are divisible by 6.
-    if (!(numTentatives == 0 || numTentatives == 6)) {
+    if (!(numTentativeCoins == 0 || numTentativeCoins == 6)) {
         return {status: "INVALID", message: "Placed the wrong number of coins."}
     }
 
-    if (numReals % 6 != 0) {
+    if (numRealCoins % 6 != 0) {
         return {status: "ERROR", message: "Wrong number of coins placed."}
     }
 
     // Need to check if all tentative coins are adjacent.
-    // Need to check if all tentative coins fulfill a single goal.
+    for (let tentativeCellIndex = 0; tentativeCellIndex < 6; tentativeCellIndex++) {
+        let tentativeCell = tentativeCells[tentativeCellIndex];
+        for (let checkDirectionX = -1; checkDirectionX < 2; checkDirectionX++) {
+            for (let checkDirectionY = -1; checkDirectionY < 2; checkDirectionY++) {
+                let checkX = tentativeCell.x + checkDirectionX;
+                let checkY = tentativeCell.y + checkDirectionY;
+                if (!isValidCell(checkX, checkY)) continue;
+                if (Math.abs(checkDirectionX) == Math.abs(checkDirectionY)) continue; //Only allows orthagonal adjacency.
+
+                let foundAdjacentCoin = false;
+                for (let possibleAdjacentTentativeCellIndex = 0; possibleAdjacentTentativeCellIndex < 6; possibleAdjacentTentativeCellIndex++) {
+                    let possibleAdjacentTentativeCell = tentativeCells[possibleAdjacentTentativeCellIndex];
+                    if (tentativeCell.x == possibleAdjacentTentativeCell.x && tentativeCell.y == possibleAdjacentTentativeCell.y) continue;
+                    if (checkX == possibleAdjacentTentativeCell.x && checkY == possibleAdjacentTentativeCell.y) {
+                        foundAdjacentCoin = true;
+                    }
+                }
+                if (!foundAdjacentCoin) {
+                    return {status: "INVALID", message: "All coins must be on adjacent cards."};
+                }
+            }
+        }
+    }
+
+    // Verify coins are on 3 different cards.
+    let cardsWithCoins = []
+    for (const tentativeCoin of tentativeCells) {
+        cardsWithCoins.push(board[tentativeCoin.x][tentativeCoin.y].id);
+    }
+    let uniqueCardsWithCoins = [...new Set(cardsWithCoins)]; //removes duplicates
+    if (uniqueCardsWithCoins.length != 3) {
+        return {status: "INVALID", message: "Coins must be on exactly 3 cards"};
+    }
+
+    // Lastly, verify that the coins are fulfilling a single goal.
+    let coinedTypes = [cardType(cardsWithCoins[0], cardType(cardsWithCoins[1], cardType(cardsWithCoins[2])))];
+    coinedTypes.sort();
+    let foundMatchingGoal = false;
+    for (const goal of goals) {
+        let goalTypes = goal.types;
+        goalTypes.sort();
+        if (coinedTypes == goalTypes) {
+            foundMatchingGoal = true;
+            break;
+        }
+    }
+
+    if (!foundMatchingGoal) {
+        return {status: "INVALID", message: "Must place coins on cards that match a goal."};
+    }
 
 
     // All looks good. Return valid status.
     return {status: "VALID", message: "valid"}
 }
 
-function getGameStateAscii() {
-    state = getState();
+function isValidCell(x, y) {
+    return x >= 0 && x <= 6 && y >= 0 && y <= 6;
+}
 
-    boardAscii = ""
-    board = state.board;
+function eqSet(as, bs) {
+    if (as.size !== bs.size) return false;
+    for (const a of as) if (!bs.has(a)) return false;
+    return true;
+}
+
+function getGameStateAscii() {
+    let state = getState();
+
+    let boardAscii = ""
+    let board = state.board;
 
     for (let x = 0; x < 7; x++) {
         for (let y = 0; y < 7; y++) {
             if (board[x][y].id == -1) {
                 boardAscii += ".";
             } else {
-                type = cardType(board[x][y].id)
+                let type = cardType(board[x][y].id);
 
                 if (board[x][y].tentative) {
-                    boardAscii += "bflrst".charAt(type)
+                    boardAscii += "bflrst".charAt(type);
                 } else {
-                    boardAscii += "BFLRST".charAt(type)
+                    boardAscii += "BFLRST".charAt(type);
                 }
             }
         }
         boardAscii += "<br>";
     }
 
-    handAscii = ""
-    hand = state.hand;
+    let handAscii = "";
+    let hand = state.hand;
     for (const cardId of hand) {
-        handAscii += "BFLRST".charAt(cardType(cardId)) + " "
+        handAscii += "BFLRST".charAt(cardType(cardId)) + " ";
     }
 
-    return {'board':boardAscii, 'hand':handAscii};
+    let goalsAscii = "";
+    let goals = state.goals;
+    for (let goalIndex = 0; goalIndex < 4; goalIndex++) {
+        let goal = goals[goalIndex];
+        goalsAscii += "Goal " + goalIndex + ": ";
+        for (let i = 0; i < 3; i++) {
+            goalsAscii += "BFLRST".charAt(goal.types[i]);
+        }
+        goalsAscii += "<br>";
+    }
+
+    return {'board':boardAscii, 'hand':handAscii, 'goals':goalsAscii};
 }
 
 function newGame() {
-    board = createEmptyBoard();
-    deck = createShuffledDeck();
-    goals = createGoals();
-    hand = [];
+    let board = createEmptyBoard();
+    let deck = createShuffledDeck();
+    let goals = createGoals();
+    let hand = [];
 
-    state = {board: board, deck: deck, goals: goals, hand: hand}
+    let state = {board: board, deck: deck, goals: goals, hand: hand};
     saveState(state);
 
     drawCard();
@@ -326,30 +482,36 @@ function saveState(state) {
 }
 
 function getState() {
-    board = JSON.parse(window.sessionStorage.getItem('board'));
-    deck = JSON.parse(window.sessionStorage.getItem('deck'));
-    goals = JSON.parse(window.sessionStorage.getItem('goals'));
-    hand = JSON.parse(window.sessionStorage.getItem('hand'));
+    let board = JSON.parse(window.sessionStorage.getItem('board'));
+    let deck = JSON.parse(window.sessionStorage.getItem('deck'));
+    let goals = JSON.parse(window.sessionStorage.getItem('goals'));
+    let hand = JSON.parse(window.sessionStorage.getItem('hand'));
 
-    return {board: board, deck: deck, goals: goals, hand: hand}
+    return {board: board, deck: deck, goals: goals, hand: hand};
 }
 
 function drawCard() {
-    state = getState();
-    deck = state.deck;
-    hand = state.hand;
+    let state = getState();
+    let deck = state.deck;
+    let hand = state.hand;
+
+    if (deck.length == 0) {
+        return false;
+    }
+
     hand.push(deck.shift());
 
-    newstate = {board: state.board, deck: deck, goals: state.goals, hand: hand}
-    saveState(newstate)
+    let newstate = {board: state.board, deck: deck, goals: state.goals, hand: hand};
+    saveState(newstate);
+    return true;
 }
 
 function cardType(cardId) {
-    return cardId / 6;
+    return Math.floor(cardId / 6);
 }
 
 function createEmptyBoard() {
-    board = [];
+    let board = [];
     for (let x = 0; x < 7; x++) {
         board[x] = [];
         for (let y = 0; y < 7; y++) {
@@ -360,7 +522,7 @@ function createEmptyBoard() {
 }
 
 function createShuffledDeck() {
-    deck = [];
+    let deck = [];
     for (let m = 0; m < 6; m++) {
         for (let n = 0; n < 6; n++) {
             deck.push(m*6 + n);
@@ -371,7 +533,7 @@ function createShuffledDeck() {
 }
 
 function createGoals() {
-    goalCards = []
+    let goalCards = []
     for (let m = 0; m < 6; m++) {
         for (let n = 0; n < 2; n++) {
             goalCards.push(m);
@@ -379,10 +541,10 @@ function createGoals() {
     }
     shuffleArray(goalCards);
 
-    firstGoal = {types:[goalCards[0], goalCards[1], goalCards[2]]};
-    secondGoal = {types:[goalCards[3], goalCards[4], goalCards[5]]};
-    thirdGoal = {types:[goalCards[6], goalCards[7], goalCards[8]]};
-    fourthGoal = {types:[goalCards[9], goalCards[10], goalCards[11]]};
+    let firstGoal = {types:[goalCards[0], goalCards[1], goalCards[2]]};
+    let secondGoal = {types:[goalCards[3], goalCards[4], goalCards[5]]};
+    let thirdGoal = {types:[goalCards[6], goalCards[7], goalCards[8]]};
+    let fourthGoal = {types:[goalCards[9], goalCards[10], goalCards[11]]};
 
     return [firstGoal, secondGoal, thirdGoal, fourthGoal];
 }
