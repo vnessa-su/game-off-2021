@@ -76,6 +76,9 @@ function checkEndOfGame() {
 }
 
 function getScore() {
+    let state = getState();
+    let board = state.board;
+
     let coinsPlaced = 0;
 
     for (let x = 0; x < BOARD_W; x++) {
