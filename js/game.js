@@ -62,6 +62,9 @@ function reload() {
 
     let goalsContainer = document.getElementById("goals");
     goalsContainer.innerHTML = gameState.goals;
+
+    let deckContainer = document.getElementById("deck");
+    deckContainer.innerHTML = gameState.deck;
 }
 
 function checkEndOfGame() {
@@ -466,7 +469,11 @@ function getGameStateAscii() {
         goalsAscii += "<br>";
     }
 
-    return {'board':boardAscii, 'hand':handAscii, 'goals':goalsAscii};
+    let deckAscii = ""
+    let deck = state.deck;
+    deckAscii = "Cards Remaining: " + deck.length;
+
+    return {'board':boardAscii, 'hand':handAscii, 'goals':goalsAscii, 'deck':deckAscii};
 }
 
 function newGame() {
